@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espresso · Ad Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c8a96e;
+    --gold-dim: #c8a96e22;
+    --gold-border: #c8a96e44;
+    --bg: #0d0d0d;
+    --bg2: #111;
+    --bg3: #161616;
+    --border: #1e1e1e;
+    --border2: #2a2a2a;
+    --text: #f0ece3;
+    --text-dim: #888;
+    --text-muted: #555;
+    --text-faint: #333;
+    --red: #ff4d22;
+    --red-dim: #ff4d2215;
+    --red-border: #ff4d2240;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 20% 80%, #c8a96e12 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 20%, #ff4d2212 0%, transparent 55%), var(--bg);
+  }
+  .login-box {
+    width: 400px; padding: 48px 40px;
+    background: var(--bg3); border: 1px solid var(--border2); border-top: 3px solid var(--gold);
+  }
+  .login-logo { font-family: 'Bebas Neue', sans-serif; font-size: 44px; letter-spacing: 3px; color: var(--gold); line-height: 1; }
+  .login-tagline { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 4px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 40px; }
+  label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 8px; }
+  input[type=text] {
+    width: 100%; padding: 11px 14px; background: var(--bg); border: 1px solid var(--border2);
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px; outline: none;
+    transition: border-color .2s; margin-bottom: 6px;
+  }
+  input[type=text]:focus { border-color: var(--gold); }
+  .hint { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-faint); margin-bottom: 28px; }
+  #login-btn {
+    width: 100%; padding: 13px; background: var(--gold); color: var(--bg);
+    border: none; font-family: 'Bebas Neue', sans-serif; font-size: 19px; letter-spacing: 3px;
+    cursor: pointer; transition: background .15s;
+  }
+  #login-btn:hover { background: #d4b87a; }
+  #login-btn:disabled { opacity: .5; cursor: not-allowed; }
+  #login-error { display: none; margin-top: 14px; padding: 11px 14px; background: var(--red-dim); border: 1px solid var(--red-border); color: #ff6b4a; font-family: 'DM Mono', monospace; font-size: 11px; }
+
+  /* ── DASHBOARD ── */
+  #dashboard { display: none; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 32px; background: var(--bg2); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; color: var(--gold); }
+  .topbar-pub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); }
+  .topbar-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 7px 14px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px;
+    text-transform: uppercase; border: 1px solid var(--border2); background: transparent;
+    color: var(--text-dim); cursor: pointer; transition: all .2s;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-danger { border-color: var(--red-border); color: #ff6b4a; }
+  .btn-danger:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+
+  .main { padding: 28px 32px; max-width: 1100px; margin: 0 auto; }
+
+  /* stats */
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 32px; }
+  .stat { padding: 18px 22px; background: var(--bg2); border: 1px solid var(--border); border-top: 2px solid var(--gold-border); }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 34px; color: var(--gold); line-height: 1; }
+  .stat-sub { font-size: 10px; color: var(--text-faint); font-family: 'DM Mono', monospace; margin-top: 3px; }
+
+  /* section */
+  .section-head {
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: var(--text-dim);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 12px;
+  }
+  .section-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* cards */
+  .cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 36px; }
+  .card {
+    background: var(--bg2); border: 1px solid var(--border); padding: 18px 22px;
+    display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: start;
+    transition: border-color .2s;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card.sponsored { border-left: 3px solid var(--gold); }
+  .card-title { font-size: 13px; font-weight: 600; color: #e0dbd0; margin-bottom: 5px; line-height: 1.4; }
+  .card-meta { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-muted); margin-bottom: 10px; display: flex; gap: 14px; }
+  .sponsor-tag {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px;
+    background: var(--gold-dim); border: 1px solid var(--gold-border);
+    color: var(--gold); font-family: 'DM Mono', monospace; font-size: 9px;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 7px;
+  }
+  .badge {
+    display: inline-block; padding: 2px 7px; font-family: 'DM Mono', monospace;
+    font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .badge-fintech { background: #1a3a2a; color: #4caf84; border: 1px solid #4caf8440; }
+  .badge-tech    { background: #1a2a3a; color: #4a9eff; border: 1px solid #4a9eff40; }
+  .badge-media   { background: #2a1a3a; color: #b04aff; border: 1px solid #b04aff40; }
+  .badge-retail  { background: #3a2a1a; color: #ff9a4a; border: 1px solid #ff9a4a40; }
+  .badge-other   { background: #2a2a2a; color: var(--text-dim); border: 1px solid #44444440; }
+  .card-link { font-size: 9px; color: var(--text-faint); font-family: 'DM Mono', monospace; display: inline-block; margin-top: 6px; text-decoration: none; }
+  .card-link:hover { color: var(--gold); }
+
+  /* ctr */
+  .ctr-col { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; min-width: 190px; }
+  .ctr-label-sm { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
+  .ctr-inputs { display: flex; gap: 6px; align-items: center; }
+  .ctr-input {
+    width: 68px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--border2);
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 11px;
+    outline: none; text-align: center; transition: border-color .2s;
+  }
+  .ctr-input:focus { border-color: var(--gold); }
+  .ctr-sep { color: var(--text-faint); }
+  .ctr-rate { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--gold); line-height: 1; }
+  .ctr-empty { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-faint); }
+
+  /* loading / empty */
+  .spinner-wrap { display: flex; flex-direction: column; align-items: center; padding: 60px; gap: 14px; }
+  .spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner-text { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
+  .empty { text-align: center; padding: 50px; color: var(--text-faint); font-family: 'DM Mono', monospace; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Espresso</div>
+    <div class="login-tagline">Ad Dashboard · v2</div>
+    <label for="pub-id">Publication ID</label>
+    <input type="text" id="pub-id" placeholder="pub_xxxxxxxxxxxxxxxx">
+    <div class="hint">beehiiv → Settings → Publication Details</div>
+    <button id="login-btn" onclick="handleLogin()">Conectar →</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <div>
+      <div class="topbar-logo">Espresso</div>
+      <div class="topbar-pub" id="topbar-pub"></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" onclick="loadPosts()">↻ Actualizar</button>
+      <button class="btn btn-danger" onclick="handleReset()">⚙ Reset</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="stats" id="stats">
+      <div class="stat"><div class="stat-label">Posts cargados</div><div class="stat-value" id="s-posts">—</div></div>
+      <div class="stat"><div class="stat-label">Ads detectados</div><div class="stat-value" id="s-ads">—</div></div>
+      <div class="stat"><div class="stat-label">Sponsors únicos</div><div class="stat-value" id="s-sponsors">—</div></div>
+      <div class="stat"><div class="stat-label">CTR promedio</div><div class="stat-value" id="s-ctr">—</div><div class="stat-sub" id="s-ctr-sub"></div></div>
+    </div>
+    <div class="section-head">Ads con Sponsor</div>
+    <div id="ads-list" class="cards"></div>
+    <div class="section-head">Sin Sponsor</div>
+    <div id="plain-list" class="cards"></div>
+  </div>
+</div>
+
+<script>
+const PROXY = "https://beehiiv-proxy.sofbee.workers.dev";
+const STORE_KEY = "espresso_v2";
+
+// ── Storage (localStorage since this is a real page) ──────────────────────────
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
+}
+function save(data) {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {}
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let state = load();
+// state = { pubId, ctrData: {postId: {clicks,impressions}}, classifications: {sponsor: cat} }
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+if (state.pubId) {
+  showDashboard(state.pubId);
+  loadPosts();
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+async function handleLogin() {
+  const pubId = document.getElementById("pub-id").value.trim();
+  if (!pubId) return showError("Ingresa tu Publication ID");
+  const btn = document.getElementById("login-btn");
+  btn.disabled = true; btn.textContent = "Conectando...";
+  hideError();
+  try {
+    await apiFetch(pubId, 1);
+    state = { pubId, ctrData: {}, classifications: {} };
+    save(state);
+    showDashboard(pubId);
+    loadPosts();
+  } catch (e) {
+    showError("No se pudo conectar: " + e.message);
+    btn.disabled = false; btn.textContent = "Conectar →";
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById("login-error");
+  el.textContent = msg; el.style.display = "block";
+}
+function hideError() { document.getElementById("login-error").style.display = "none"; }
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function showDashboard(pubId) {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  document.getElementById("topbar-pub").textContent = pubId;
+}
+
+function handleReset() {
+  localStorage.removeItem(STORE_KEY);
+  location.reload();
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function apiFetch(pubId, page = 1) {
+  const url = `${PROXY}/v2/publications/${pubId}/posts?limit=20&page=${page}&status=confirmed&expand[]=free_web_content`;
+  const r = await fetch(url);
+  if (!r.ok) { const t = await r.text().catch(() => r.statusText); throw new Error(`${r.status}: ${t}`); }
+  return r.json();
+}
+
+// ── Load Posts ────────────────────────────────────────────────────────────────
+async function loadPosts() {
+  document.getElementById("ads-list").innerHTML = spinnerHTML();
+  document.getElementById("plain-list").innerHTML = "";
+
+  try {
+    const data = await apiFetch(state.pubId);
+    const posts = (data.data || []).map(p => ({ ...p, _sp: detectSponsor(p) }));
+
+    // Classify new sponsors
+    for (const p of posts) {
+      if (p._sp.detected && p._sp.name && !state.classifications[p._sp.name]) {
+        state.classifications[p._sp.name] = await classifyAd(p._sp.name);
+        save(state);
+      }
+    }
+
+    renderPosts(posts);
+  } catch (e) {
+    document.getElementById("ads-list").innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderPosts(posts) {
+  const ads = posts.filter(p => p._sp.detected);
+  const plain = posts.filter(p => !p._sp.detected);
+
+  // stats
+  document.getElementById("s-posts").textContent = posts.length;
+  document.getElementById("s-ads").textContent = ads.length;
+  const uniqSponsors = [...new Set(ads.map(p => p._sp.name).filter(Boolean))];
+  document.getElementById("s-sponsors").textContent = uniqSponsors.length;
+  updateAvgCtr(ads);
+
+  // ads
+  const adsList = document.getElementById("ads-list");
+  if (!ads.length) { adsList.innerHTML = '<div class="empty">No se detectaron posts con "PRESENTADO POR" en los últimos 20 posts.</div>'; }
+  else { adsList.innerHTML = ads.map(p => cardHTML(p, true)).join(""); }
+
+  // plain
+  document.getElementById("plain-list").innerHTML = plain.map(p => cardHTML(p, false)).join("") || '<div class="empty">—</div>';
+}
+
+function cardHTML(post, sponsored) {
+  const ctr = (state.ctrData || {})[post.id] || {};
+  const rate = calcCTR(ctr.clicks, ctr.impressions);
+  const sponsor = post._sp.name || "";
+  const cat = state.classifications[sponsor] || "";
+  const date = post.publish_date ? new Date(post.publish_date * 1000).toLocaleDateString("es-MX", { year: "numeric", month: "short", day: "numeric" }) : "—";
+
+  return `
+  <div class="card${sponsored ? " sponsored" : ""}">
+    <div>
+      <div class="card-title">${esc(post.title || "Sin título")}</div>
+      <div class="card-meta"><span>${date}</span></div>
+      ${sponsored ? `<div class="sponsor-tag">◆ ${esc(sponsor)}</div>` : ""}
+      ${cat ? `<span class="badge ${badgeClass(cat)}">${esc(cat)}</span>` : ""}
+      ${post.web_url ? `<a class="card-link" href="${post.web_url}" target="_blank" rel="noopener">Ver post ↗</a>` : ""}
+    </div>
+    ${sponsored ? `
+    <div class="ctr-col">
+      <div class="ctr-label-sm">Clicks / Impresiones</div>
+      <div class="ctr-inputs">
+        <input class="ctr-input" type="number" min="0" placeholder="Clicks"
+          value="${ctr.clicks || ""}"
+          oninput="updateCtr('${post.id}','clicks',this.value)">
+        <span class="ctr-sep">/</span>
+        <input class="ctr-input" type="number" min="0" placeholder="Imp."
+          value="${ctr.impressions || ""}"
+          oninput="updateCtr('${post.id}','impressions',this.value)">
+      </div>
+      ${rate
+        ? `<div class="ctr-rate">${rate}%</div><div class="ctr-label-sm">CTR</div>`
+        : `<div class="ctr-empty">ingresa datos →</div>`}
+    </div>` : ""}
+  </div>`;
+}
+
+// ── CTR ───────────────────────────────────────────────────────────────────────
+function updateCtr(postId, field, value) {
+  if (!state.ctrData) state.ctrData = {};
+  if (!state.ctrData[postId]) state.ctrData[postId] = {};
+  state.ctrData[postId][field] = value;
+  save(state);
+
+  // Update rate display inline
+  const inputs = document.querySelectorAll(`[oninput*="'${postId}'"]`);
+  if (inputs.length === 2) {
+    const ctr = state.ctrData[postId];
+    const rate = calcCTR(ctr.clicks, ctr.impressions);
+    const col = inputs[0].closest(".ctr-col");
+    let rateEl = col.querySelector(".ctr-rate");
+    let emptyEl = col.querySelector(".ctr-empty");
+    if (rate) {
+      if (!rateEl) {
+        if (emptyEl) emptyEl.remove();
+        col.insertAdjacentHTML("beforeend", `<div class="ctr-rate">${rate}%</div><div class="ctr-label-sm">CTR</div>`);
+      } else { rateEl.textContent = rate + "%"; }
+    } else {
+      if (rateEl) { rateEl.nextElementSibling?.remove(); rateEl.remove(); }
+      if (!emptyEl) col.insertAdjacentHTML("beforeend", `<div class="ctr-empty">ingresa datos →</div>`);
+    }
+  }
+
+  // Recalc avg
+  const allAds = [...document.querySelectorAll(".card.sponsored")];
+  const ids = allAds.map(el => {
+    const inp = el.querySelector(".ctr-input");
+    return inp ? inp.getAttribute("oninput").match(/'([^']+)'/)?.[1] : null;
+  }).filter(Boolean);
+  const ctrs = ids.map(id => calcCTR(state.ctrData[id]?.clicks, state.ctrData[id]?.impressions)).filter(Boolean).map(Number);
+  const avg = ctrs.length ? (ctrs.reduce((a, b) => a + b) / ctrs.length).toFixed(2) : null;
+  document.getElementById("s-ctr").textContent = avg ? avg + "%" : "—";
+  document.getElementById("s-ctr-sub").textContent = avg ? `de ${ctrs.length} ads` : "";
+}
+
+function updateAvgCtr(ads) {
+  const ctrs = ads.map(p => calcCTR(state.ctrData?.[p.id]?.clicks, state.ctrData?.[p.id]?.impressions)).filter(Boolean).map(Number);
+  const avg = ctrs.length ? (ctrs.reduce((a, b) => a + b) / ctrs.length).toFixed(2) : null;
+  document.getElementById("s-ctr").textContent = avg ? avg + "%" : "—";
+  document.getElementById("s-ctr-sub").textContent = avg ? `de ${ctrs.length} ads` : "";
+}
+
+function calcCTR(clicks, impressions) {
+  const c = parseInt(clicks) || 0, i = parseInt(impressions) || 0;
+  return (c && i) ? ((c / i) * 100).toFixed(2) : null;
+}
+
+// ── Classify ──────────────────────────────────────────────────────────────────
+async function classifyAd(name) {
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 60,
+        messages: [{ role: "user", content: `Clasifica este sponsor en UNA categoría de industria (máx 3 palabras, en español): "${name}". Responde SOLO con el nombre de la categoría.` }]
+      })
+    });
+    const d = await r.json();
+    return d.content?.[0]?.text?.trim() || "Sin categoría";
+  } catch { return "Sin categoría"; }
+}
+
+function badgeClass(cat) {
+  const c = (cat || "").toLowerCase();
+  if (c.includes("fintech") || c.includes("financ")) return "badge-fintech";
+  if (c.includes("tech") || c.includes("software") || c.includes("saas")) return "badge-tech";
+  if (c.includes("media") || c.includes("news") || c.includes("newsletter")) return "badge-media";
+  if (c.includes("retail") || c.includes("ecomm") || c.includes("tienda")) return "badge-retail";
+  return "badge-other";
+}
+
+// ── Sponsor detection ─────────────────────────────────────────────────────────
+function detectSponsor(post) {
+  const text = [post.title, post.subtitle, post.preview_text, post.content?.free?.web, post.content?.free?.email]
+    .filter(Boolean).join(" ").toUpperCase();
+  const kws = ["PRESENTADO POR", "SPONSORED BY", "PATROCINADO POR", "EN COLABORACIÓN CON"];
+  for (const kw of kws) {
+    if (text.includes(kw)) {
+      const idx = text.indexOf(kw);
+      const snippet = text.slice(idx, idx + 80);
+      const m = snippet.match(/(?:PRESENTADO POR|SPONSORED BY|PATROCINADO POR|EN COLABORACI[OÓ]N CON)[:\s]+([A-Z0-9 &.,'-]{2,40})/);
+      return { detected: true, name: m ? m[1].trim() : "Unknown" };
+    }
+  }
+  return { detected: false, name: null };
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) { return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function spinnerHTML() { return `<div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Buscando sponsors...</div></div>`; }
+</script>
+</body>
+</html>
