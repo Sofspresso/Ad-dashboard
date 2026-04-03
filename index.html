@@ -25,7 +25,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
-
+ 
   /* ── LOGIN ── */
   #login-screen {
     min-height: 100vh; display: flex; align-items: center; justify-content: center;
@@ -54,7 +54,7 @@
   #login-btn:hover { background: #d4b87a; }
   #login-btn:disabled { opacity: .5; cursor: not-allowed; }
   #login-error { display: none; margin-top: 14px; padding: 11px 14px; background: var(--red-dim); border: 1px solid var(--red-border); color: #ff6b4a; font-family: 'DM Mono', monospace; font-size: 11px; }
-
+ 
   /* ── DASHBOARD ── */
   #dashboard { display: none; }
   .topbar {
@@ -73,23 +73,23 @@
   .btn:hover { border-color: var(--gold); color: var(--gold); }
   .btn-danger { border-color: var(--red-border); color: #ff6b4a; }
   .btn-danger:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
-
+ 
   .main { padding: 28px 32px; max-width: 1100px; margin: 0 auto; }
-
+ 
   /* stats */
   .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 32px; }
   .stat { padding: 18px 22px; background: var(--bg2); border: 1px solid var(--border); border-top: 2px solid var(--gold-border); }
   .stat-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
   .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 34px; color: var(--gold); line-height: 1; }
   .stat-sub { font-size: 10px; color: var(--text-faint); font-family: 'DM Mono', monospace; margin-top: 3px; }
-
+ 
   /* section */
   .section-head {
     font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: var(--text-dim);
     margin-bottom: 14px; display: flex; align-items: center; gap: 12px;
   }
   .section-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
+ 
   /* cards */
   .cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 36px; }
   .card {
@@ -118,7 +118,7 @@
   .badge-other   { background: #2a2a2a; color: var(--text-dim); border: 1px solid #44444440; }
   .card-link { font-size: 9px; color: var(--text-faint); font-family: 'DM Mono', monospace; display: inline-block; margin-top: 6px; text-decoration: none; }
   .card-link:hover { color: var(--gold); }
-
+ 
   /* ctr */
   .ctr-col { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; min-width: 190px; }
   .ctr-label-sm { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
@@ -132,7 +132,7 @@
   .ctr-sep { color: var(--text-faint); }
   .ctr-rate { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--gold); line-height: 1; }
   .ctr-empty { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-faint); }
-
+ 
   /* loading / empty */
   .spinner-wrap { display: flex; flex-direction: column; align-items: center; padding: 60px; gap: 14px; }
   .spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; }
@@ -142,7 +142,7 @@
 </style>
 </head>
 <body>
-
+ 
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
@@ -155,7 +155,7 @@
     <div id="login-error"></div>
   </div>
 </div>
-
+ 
 <!-- DASHBOARD -->
 <div id="dashboard">
   <div class="topbar">
@@ -164,7 +164,7 @@
       <div class="topbar-pub" id="topbar-pub"></div>
     </div>
     <div class="topbar-actions">
-      <button class="btn" onclick="loadPosts()">↻ Actualizar</button>
+      <button class="btn" onclick="loadPosts(1)">↻ Actualizar</button>
       <button class="btn btn-danger" onclick="handleReset()">⚙ Reset</button>
     </div>
   </div>
@@ -179,13 +179,16 @@
     <div id="ads-list" class="cards"></div>
     <div class="section-head">Sin Sponsor</div>
     <div id="plain-list" class="cards"></div>
+    <div id="load-more-wrap" style="display:none; justify-content:center; padding: 24px 0 40px;">
+      <button class="btn" id="load-more-btn" onclick="loadPosts(currentPage + 1)">Cargar más</button>
+    </div>
   </div>
 </div>
-
+ 
 <script>
 const PROXY = "https://beehiiv-proxy.sofbee.workers.dev";
 const STORE_KEY = "espresso_v2";
-
+ 
 // ── Storage (localStorage since this is a real page) ──────────────────────────
 function load() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
@@ -193,17 +196,20 @@ function load() {
 function save(data) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {}
 }
-
+ 
 // ── State ─────────────────────────────────────────────────────────────────────
 let state = load();
 // state = { pubId, ctrData: {postId: {clicks,impressions}}, classifications: {sponsor: cat} }
-
+let currentPage = 1;
+let allPosts = [];
+let totalPages = 1;
+ 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 if (state.pubId) {
   showDashboard(state.pubId);
-  loadPosts();
+  loadPosts(1);
 }
-
+ 
 // ── Login ─────────────────────────────────────────────────────────────────────
 async function handleLogin() {
   const pubId = document.getElementById("pub-id").value.trim();
@@ -216,90 +222,108 @@ async function handleLogin() {
     state = { pubId, ctrData: {}, classifications: {} };
     save(state);
     showDashboard(pubId);
-    loadPosts();
+    loadPosts(1);
   } catch (e) {
     showError("No se pudo conectar: " + e.message);
     btn.disabled = false; btn.textContent = "Conectar →";
   }
 }
-
+ 
 function showError(msg) {
   const el = document.getElementById("login-error");
   el.textContent = msg; el.style.display = "block";
 }
 function hideError() { document.getElementById("login-error").style.display = "none"; }
-
+ 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 function showDashboard(pubId) {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("dashboard").style.display = "block";
   document.getElementById("topbar-pub").textContent = pubId;
 }
-
+ 
 function handleReset() {
   localStorage.removeItem(STORE_KEY);
   location.reload();
 }
-
+ 
 // ── API ───────────────────────────────────────────────────────────────────────
 async function apiFetch(pubId, page = 1) {
-  const url = `${PROXY}/v2/publications/${pubId}/posts?limit=20&page=${page}&status=confirmed&expand[]=free_web_content`;
+  const url = `${PROXY}/v2/publications/${pubId}/posts?limit=20&page=${page}&status=confirmed&order_by=publish_date&order_direction=desc&expand[]=free_web_content`;
   const r = await fetch(url);
   if (!r.ok) { const t = await r.text().catch(() => r.statusText); throw new Error(`${r.status}: ${t}`); }
   return r.json();
 }
-
+ 
 // ── Load Posts ────────────────────────────────────────────────────────────────
-async function loadPosts() {
-  document.getElementById("ads-list").innerHTML = spinnerHTML();
-  document.getElementById("plain-list").innerHTML = "";
-
+async function loadPosts(page = 1) {
+  if (page === 1) {
+    allPosts = [];
+    document.getElementById("ads-list").innerHTML = spinnerHTML();
+    document.getElementById("plain-list").innerHTML = "";
+    document.getElementById("load-more-wrap").style.display = "none";
+  }
+ 
   try {
-    const data = await apiFetch(state.pubId);
-    const posts = (data.data || []).map(p => ({ ...p, _sp: detectSponsor(p) }));
-
+    const data = await apiFetch(state.pubId, page);
+    currentPage = page;
+    totalPages = data.total_pages || 1;
+ 
+    const newPosts = (data.data || []).map(p => ({ ...p, _sp: detectSponsor(p) }));
+ 
     // Classify new sponsors
-    for (const p of posts) {
+    for (const p of newPosts) {
       if (p._sp.detected && p._sp.name && !state.classifications[p._sp.name]) {
         state.classifications[p._sp.name] = await classifyAd(p._sp.name);
         save(state);
       }
     }
-
-    renderPosts(posts);
+ 
+    allPosts = page === 1 ? newPosts : [...allPosts, ...newPosts];
+    renderPosts(allPosts);
+ 
+    // Show/hide load more
+    const wrap = document.getElementById("load-more-wrap");
+    if (currentPage < totalPages) {
+      wrap.style.display = "flex";
+      document.getElementById("load-more-btn").textContent = `Cargar más (página ${currentPage + 1} de ${totalPages})`;
+    } else {
+      wrap.style.display = "none";
+    }
+ 
   } catch (e) {
     document.getElementById("ads-list").innerHTML = `<div class="empty">Error: ${e.message}</div>`;
   }
 }
-
+ 
 // ── Render ────────────────────────────────────────────────────────────────────
 function renderPosts(posts) {
   const ads = posts.filter(p => p._sp.detected);
   const plain = posts.filter(p => !p._sp.detected);
-
+ 
   // stats
   document.getElementById("s-posts").textContent = posts.length;
   document.getElementById("s-ads").textContent = ads.length;
   const uniqSponsors = [...new Set(ads.map(p => p._sp.name).filter(Boolean))];
   document.getElementById("s-sponsors").textContent = uniqSponsors.length;
   updateAvgCtr(ads);
-
+ 
   // ads
   const adsList = document.getElementById("ads-list");
   if (!ads.length) { adsList.innerHTML = '<div class="empty">No se detectaron posts con "PRESENTADO POR" en los últimos 20 posts.</div>'; }
   else { adsList.innerHTML = ads.map(p => cardHTML(p, true)).join(""); }
-
+ 
   // plain
   document.getElementById("plain-list").innerHTML = plain.map(p => cardHTML(p, false)).join("") || '<div class="empty">—</div>';
 }
-
+ 
 function cardHTML(post, sponsored) {
   const ctr = (state.ctrData || {})[post.id] || {};
   const rate = calcCTR(ctr.clicks, ctr.impressions);
   const sponsor = post._sp.name || "";
   const cat = state.classifications[sponsor] || "";
   const date = post.publish_date ? new Date(post.publish_date * 1000).toLocaleDateString("es-MX", { year: "numeric", month: "short", day: "numeric" }) : "—";
-
+ 
   return `
   <div class="card${sponsored ? " sponsored" : ""}">
     <div>
@@ -327,14 +351,14 @@ function cardHTML(post, sponsored) {
     </div>` : ""}
   </div>`;
 }
-
+ 
 // ── CTR ───────────────────────────────────────────────────────────────────────
 function updateCtr(postId, field, value) {
   if (!state.ctrData) state.ctrData = {};
   if (!state.ctrData[postId]) state.ctrData[postId] = {};
   state.ctrData[postId][field] = value;
   save(state);
-
+ 
   // Update rate display inline
   const inputs = document.querySelectorAll(`[oninput*="'${postId}'"]`);
   if (inputs.length === 2) {
@@ -353,7 +377,7 @@ function updateCtr(postId, field, value) {
       if (!emptyEl) col.insertAdjacentHTML("beforeend", `<div class="ctr-empty">ingresa datos →</div>`);
     }
   }
-
+ 
   // Recalc avg
   const allAds = [...document.querySelectorAll(".card.sponsored")];
   const ids = allAds.map(el => {
@@ -365,19 +389,19 @@ function updateCtr(postId, field, value) {
   document.getElementById("s-ctr").textContent = avg ? avg + "%" : "—";
   document.getElementById("s-ctr-sub").textContent = avg ? `de ${ctrs.length} ads` : "";
 }
-
+ 
 function updateAvgCtr(ads) {
   const ctrs = ads.map(p => calcCTR(state.ctrData?.[p.id]?.clicks, state.ctrData?.[p.id]?.impressions)).filter(Boolean).map(Number);
   const avg = ctrs.length ? (ctrs.reduce((a, b) => a + b) / ctrs.length).toFixed(2) : null;
   document.getElementById("s-ctr").textContent = avg ? avg + "%" : "—";
   document.getElementById("s-ctr-sub").textContent = avg ? `de ${ctrs.length} ads` : "";
 }
-
+ 
 function calcCTR(clicks, impressions) {
   const c = parseInt(clicks) || 0, i = parseInt(impressions) || 0;
   return (c && i) ? ((c / i) * 100).toFixed(2) : null;
 }
-
+ 
 // ── Classify ──────────────────────────────────────────────────────────────────
 async function classifyAd(name) {
   try {
@@ -394,7 +418,7 @@ async function classifyAd(name) {
     return d.content?.[0]?.text?.trim() || "Sin categoría";
   } catch { return "Sin categoría"; }
 }
-
+ 
 function badgeClass(cat) {
   const c = (cat || "").toLowerCase();
   if (c.includes("fintech") || c.includes("financ")) return "badge-fintech";
@@ -403,7 +427,7 @@ function badgeClass(cat) {
   if (c.includes("retail") || c.includes("ecomm") || c.includes("tienda")) return "badge-retail";
   return "badge-other";
 }
-
+ 
 // ── Sponsor detection ─────────────────────────────────────────────────────────
 function detectSponsor(post) {
   const text = [post.title, post.subtitle, post.preview_text, post.content?.free?.web, post.content?.free?.email]
@@ -419,7 +443,7 @@ function detectSponsor(post) {
   }
   return { detected: false, name: null };
 }
-
+ 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) { return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function spinnerHTML() { return `<div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Buscando sponsors...</div></div>`; }
